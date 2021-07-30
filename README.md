@@ -1,1 +1,2 @@
-# control-lights-with-the-wizard-of-oz
+# Control lights with gestures using wizard of Oz.
+
