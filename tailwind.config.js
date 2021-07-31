@@ -8,7 +8,7 @@ module.exports = {
   theme: {
     extend: {
       flex: {
-        200: '0 0 200px',
+        200: '0 0 400px',
         300: '0 0 300px',
       },
       colors: {

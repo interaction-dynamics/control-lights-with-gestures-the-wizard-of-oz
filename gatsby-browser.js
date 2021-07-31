@@ -6,3 +6,6 @@
 
 // You can delete this file if you're not using it
 import './src/styles/global.css'
+import axios from 'axios'
+
+axios.defaults.baseURL = '/api'

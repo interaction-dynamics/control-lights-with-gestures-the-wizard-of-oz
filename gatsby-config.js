@@ -4,6 +4,10 @@ module.exports = {
     description: '',
     author: 'Thibault Friedrich <thibault.friedrich@gmail.com>',
   },
+  proxy: {
+    prefix: '/api',
+    url: 'http://localhost:8080',
+  },
   plugins: [
     'gatsby-plugin-react-helmet',
     {
