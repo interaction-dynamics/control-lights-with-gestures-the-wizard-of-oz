@@ -10,7 +10,7 @@ const Light = ({ name, id, className, state }) => {
     state.on ? (state.bri / 254) * 100 : 0
   )
 
-  const changeBrigthnessThrottled = useCallback(
+  const changeBrightnessThrottled = useCallback(
     throttle(value => {
       axios.put(
         id ? `/lights/${id}/brightness/${value}` : `/lights/brightness/${value}`
@@ -23,7 +23,11 @@ const Light = ({ name, id, className, state }) => {
     const { value } = event.target
     setBrightness(value)
 
-    changeBrigthnessThrottled(value)
+    changeBrightnessThrottled(value)
+  }
+
+  const startSelectionEffect = () => {
+    axios.put(id ? `/lights/${id}/selection` : `/lights/selection`)
   }
 
   return (
@@ -35,7 +39,9 @@ const Light = ({ name, id, className, state }) => {
       <Button className="mr-10" onClick={stop}>
         stop
       </Button> */}
-      <Button className="mr-4">selected</Button>
+      <Button className="mr-4" onClick={startSelectionEffect}>
+        selected
+      </Button>
 
       <input
         type="range"

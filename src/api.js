@@ -14,6 +14,7 @@ dotenv.config()
 let api = null
 let room = null
 let lights = []
+let scenes = []
 
 const start = async () => {
   const discoveryResults = await discovery.nupnpSearch()
@@ -25,6 +26,17 @@ const start = async () => {
   room = groups[0] || null
   const allLights = await api.lights.getAll()
   lights = allLights.filter(l => room.data.lights.includes(`${l.data.id}`))
+
+  const allScenes = await api.scenes.getAll()
+
+  scenes = allScenes.filter(
+    s =>
+      process.env.scenes
+        .replace(/\s/g, '')
+        .toLowerCase()
+        .split(',')
+        .includes(s.data.name.toLowerCase()) && s.data.group === `${room.id}`
+  )
 }
 
 const app = express()
@@ -52,11 +64,24 @@ app.get('/api', async (req, res) => {
   res.send(groups)
 })
 
-const findAllLights = async () =>
-  lights.filter(l => room.data.lights.includes(`${l.data.id}`))
-
 app.get('/api/lights', async (req, res) => {
   res.send(lights)
+})
+
+app.get('/api/scenes', async (req, res) => {
+  res.send(scenes)
+})
+
+app.put('/api/scenes/:sceneId', async (req, res) => {
+  try {
+    const newLightState = new GroupLightState().scene(req.params.sceneId)
+
+    await api.groups.setGroupState(room.id, newLightState)
+
+    return res.send({ success: true })
+  } catch (e) {
+    return res.send({ error: e.message })
+  }
 })
 
 const updateBrightness = async (lightId, brightness) => {
@@ -86,6 +111,47 @@ app.put('/api/lights/:id/brightness/:value', async (req, res) => {
   try {
     await updateBrightness(req.params.id, brightness)
 
+    return res.send({ success: true })
+  } catch (e) {
+    return res.send({ error: e.message })
+  }
+})
+
+const updateBrightnessFast = async (lightId, brightness) => {
+  const newLightState = new LightState()
+    .on(brightness > 0)
+    .brightness(brightness)
+    .transitionFast(500)
+
+  await api.lights.setLightState(lightId, newLightState)
+}
+
+const blinkBrightness = async lightId => {
+  const selectedLight = await api.lights.getLight(parseInt(lightId, 10))
+
+  const brightness = selectedLight.data.state.on
+    ? (selectedLight.data.state.bri / 254) * 100
+    : 0
+
+  const temporaryScene = brightness > 50 ? brightness * 0.5 : brightness * 1.75
+
+  await updateBrightnessFast(lightId, temporaryScene)
+  await new Promise(resolve => setTimeout(resolve, 600))
+  await updateBrightnessFast(lightId, brightness)
+}
+
+app.put('/api/lights/selection', async (req, res) => {
+  try {
+    await Promise.all(lights.map(l => blinkBrightness(l.data.id)))
+    return res.send({ success: true })
+  } catch (e) {
+    return res.send({ error: e.message })
+  }
+})
+
+app.put('/api/lights/:id/selection', async (req, res) => {
+  try {
+    await blinkBrightness(req.params.id)
     return res.send({ success: true })
   } catch (e) {
     return res.send({ error: e.message })
